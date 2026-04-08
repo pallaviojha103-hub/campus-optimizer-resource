@@ -153,6 +153,10 @@ Enhancing user experience
 
 ---
 
+### Screenshots
+
+![WhatsApp Image 2026-04-08 at 2 15 32 PM](https://github.com/user-attachments/assets/c1980839-10ec-4da9-872a-32b56e65f8d3)
+
 ### 🌟 Future Improvements
 🔔 Notification system for bookings
 📱 Mobile-friendly UI
