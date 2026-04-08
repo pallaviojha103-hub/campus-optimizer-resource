@@ -156,6 +156,12 @@ Enhancing user experience
 ### Screenshots
 
 ![WhatsApp Image 2026-04-08 at 2 15 32 PM](https://github.com/user-attachments/assets/c1980839-10ec-4da9-872a-32b56e65f8d3)
+![WhatsApp Image 2026-04-08 at 2 15 30 PM](https://github.com/user-attachments/assets/fc6bccfd-b7f2-4ee1-9682-246958ea47d6)
+![WhatsApp Image 2026-04-08 at 2 15 28 PM](https://github.com/user-attachments/assets/7baa4d59-719a-4781-968a-faeb24f73fbe)
+![WhatsApp Image 2026-04-08 at 2 15 27 PM](https://github.com/user-attachments/assets/97a7af69-fa3a-4e81-8cc0-73fdc5ffd186)
+![WhatsApp Image 2026-04-08 at 2 15 26 PM](https://github.com/user-attachments/assets/90de0a18-1788-4359-9ca5-2f69dcca710d)
+
+---
 
 ### 🌟 Future Improvements
 🔔 Notification system for bookings
