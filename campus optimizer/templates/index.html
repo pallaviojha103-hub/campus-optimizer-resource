@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="SmartCampus Resource Optimizer - AI-powered campus resource management">
+    <title>SmartCampus Resource Optimizer</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+    <div class="navbar-brand">
+        <div class="logo-icon">🏫</div>
+        <div>
+            <h1>SmartCampus</h1>
+            <span>Resource Optimizer</span>
+        </div>
+    </div>
+    <div class="nav-links">
+        <a href="/">Home</a>
+        <a href="/books">📚 Library Books</a>
+        {% if session.user %}
+            <span>Welcome, {{ session.user }}!</span>
+            <a href="/logout">Logout</a>
+        {% else %}
+            <a href="/login">Login</a>
+            <a href="/register">Register</a>
+        {% endif %}
+    </div>
+    <div class="nav-status">
+        <div class="dot"></div>
+        System Online
+    </div>
+</nav>
+
+<!-- MAIN -->
+<div class="main-container">
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div class="flash-messages">
+                {% for message in messages %}
+                    <p>{{ message }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- STATS ROW -->
+    <div class="stats-row" id="stats-row">
+        <div class="stat-card">
+            <div class="stat-icon purple">📊</div>
+            <div class="stat-value" id="stat-total">--</div>
+            <div class="stat-label">Total Resources</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon teal">✅</div>
+            <div class="stat-value" id="stat-available">--</div>
+            <div class="stat-label">Available Now</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon orange">🔒</div>
+            <div class="stat-value" id="stat-occupied">--</div>
+            <div class="stat-label">Occupied</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon yellow">📅</div>
+            <div class="stat-value" id="stat-bookings">--</div>
+            <div class="stat-label">Total Bookings</div>
+        </div>
+    </div>
+
+    <!-- ROW 1: Resources + Booking -->
+    <div class="dashboard-grid">
+        <!-- Resources Card -->
+        <div class="card">
+            <div class="card-header">
+                <h2><span class="icon">🏛️</span> Campus Resources</h2>
+                <button class="btn btn-outline" onclick="loadResources()" style="width:auto; padding:8px 16px; font-size:12px;">↻ Refresh</button>
+            </div>
+            <div class="card-body">
+                <ul class="resource-list" id="resources">
+                    <div class="empty-state">
+                        <div class="empty-icon">📡</div>
+                        <div>Loading resources...</div>
+                    </div>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Booking Card -->
+        <div class="card">
+            <div class="card-header">
+                <h2><span class="icon">📝</span> Book a Resource</h2>
+            </div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label>Your Name</label>
+                    <input class="form-input" id="user" placeholder="e.g. Pallavi Kumari">
+                </div>
+                <div class="form-group">
+                    <label>Resource Name</label>
+                    <input class="form-input" id="resource" placeholder="e.g. Lab 1, Study Room A">
+                </div>
+                <button class="btn btn-success" onclick="book()" id="book-btn">📅 Book Now</button>
+
+                <div style="margin-top: 24px; border-top: 1px solid var(--border); padding-top: 20px;">
+                    <h2 style="font-size:14px; margin-bottom:14px; display:flex; align-items:center; gap:8px;"><span>📋</span> Recent Bookings</h2>
+                    <ul class="bookings-list" id="bookings-list">
+                        <div class="empty-state" style="padding:20px;">
+                            <div>No bookings yet</div>
+                        </div>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ROW 2: Prediction + Analytics -->
+    <div class="dashboard-grid">
+        <!-- Prediction Card -->
+        <div class="card">
+            <div class="card-header">
+                <h2><span class="icon">🤖</span> AI Usage Prediction</h2>
+            </div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label>Enter Hour (1-12)</label>
+                    <input class="form-input" id="time" type="number" min="1" max="12" placeholder="e.g. 10 for 10 AM">
+                </div>
+                <button class="btn btn-primary" onclick="predict()">⚡ Predict Usage</button>
+
+                <div class="prediction-result" id="prediction-result">
+                    <div class="prediction-header">
+                        <div>
+                            <div style="font-size:12px; color:var(--text-muted); margin-bottom:4px;">PREDICTED USAGE</div>
+                            <div class="prediction-value" id="prediction-value">--</div>
+                        </div>
+                        <div class="prediction-level" id="prediction-level">--</div>
+                    </div>
+                    <div class="prediction-bar">
+                        <div class="prediction-bar-fill" id="prediction-bar" style="width: 0%"></div>
+                    </div>
+                    <div class="prediction-suggestion" id="prediction-suggestion"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Analytics Chart Card -->
+        <div class="card">
+            <div class="card-header">
+                <h2><span class="icon">📈</span> Hourly Usage Analytics</h2>
+            </div>
+            <div class="chart-container" id="chart-container">
+                <div class="empty-state">
+                    <div class="loading-spinner"></div>
+                    <div>Loading analytics...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ROW 3: Owner Panel -->
+    <div class="dashboard-grid">
+        <!-- Add Resource Card (Owner Only) -->
+        <div class="card">
+            <div class="card-header">
+                <h2><span class="icon">🔐</span> Add New Resource (Owner)</h2>
+            </div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label>Owner Password</label>
+                    <input class="form-input" id="owner-password" type="password" placeholder="Enter owner password">
+                </div>
+                <div class="form-group">
+                    <label>Resource Name</label>
+                    <input class="form-input" id="resource-name" placeholder="e.g. Lab 3, Conference Room">
+                </div>
+                <div class="form-group">
+                    <label>Resource Type</label>
+                    <select class="form-input" id="resource-type">
+                        <option value="">Select a type...</option>
+                        <option value="Laboratory">Laboratory</option>
+                        <option value="Study Room">Study Room</option>
+                        <option value="Library">Library</option>
+                        <option value="Hall">Hall</option>
+                        <option value="Meeting Room">Meeting Room</option>
+                        <option value="Classroom">Classroom</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Capacity</label>
+                    <input class="form-input" id="resource-capacity" type="number" min="1" placeholder="e.g. 50">
+                </div>
+                <div class="form-group">
+                    <label>Status</label>
+                    <select class="form-input" id="resource-status">
+                        <option value="available">Available</option>
+                        <option value="occupied">Occupied</option>
+                    </select>
+                </div>
+                <button class="btn btn-success" onclick="addResource()" id="add-resource-btn">➕ Add Resource</button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// Toast notification
+function showToast(message, type = 'success') {
+    const toast = document.getElementById('toast');
+    toast.className = 'toast ' + type;
+    toast.innerHTML = (type === 'success' ? '✅ ' : '❌ ') + message;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
+// Load resources
+function loadResources() {
+    const list = document.getElementById('resources');
+    list.innerHTML = '<div class="empty-state"><div class="loading-spinner"></div></div>';
+
+    fetch('/resources')
+        .then(res => res.json())
+        .then(data => {
+            list.innerHTML = '';
+            let available = 0, occupied = 0;
+
+            data.forEach((item, i) => {
+                if (item.status === 'available') available++;
+                else occupied++;
+
+                const icons = { 'Laboratory': '🔬', 'Study Room': '📖', 'Library': '📚', 'Hall': '🎤' };
+                const icon = icons[item.type] || '🏫';
+
+                const li = document.createElement('li');
+                li.className = 'resource-item';
+                li.style.animationDelay = (i * 0.08) + 's';
+                li.innerHTML = `
+                    <div class="resource-info">
+                        <div class="r-icon">${icon}</div>
+                        <div>
+                            <div class="r-name">${item.name}</div>
+                            <div class="r-type">${item.type}</div>
+                        </div>
+                    </div>
+                    <div class="resource-meta">
+                        <span class="capacity">👥 ${item.capacity}</span>
+                        <span class="status-badge ${item.status}">${item.status}</span>
+                    </div>
+                `;
+                list.appendChild(li);
+            });
+
+            document.getElementById('stat-total').textContent = data.length;
+            document.getElementById('stat-available').textContent = available;
+            document.getElementById('stat-occupied').textContent = occupied;
+        })
+        .catch(() => {
+            list.innerHTML = '<div class="empty-state"><div class="empty-icon">⚠️</div><div>Failed to load</div></div>';
+        });
+}
+
+// Book resource
+function book() {
+    const user = document.getElementById('user').value.trim();
+    const resource = document.getElementById('resource').value.trim();
+
+    if (!user || !resource) {
+        showToast('Please fill in both fields', 'error');
+        return;
+    }
+
+    const btn = document.getElementById('book-btn');
+    btn.innerHTML = '<div class="loading-spinner"></div> Booking...';
+    btn.disabled = true;
+
+    fetch('/book', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `user=${encodeURIComponent(user)}&resource=${encodeURIComponent(resource)}`
+    })
+    .then(res => res.json())
+    .then(data => {
+        showToast(data.message || 'Booked successfully!');
+        document.getElementById('user').value = '';
+        document.getElementById('resource').value = '';
+        loadBookings();
+        loadAnalytics();
+    })
+    .catch(() => showToast('Booking failed', 'error'))
+    .finally(() => {
+        btn.innerHTML = '📅 Book Now';
+        btn.disabled = false;
+    });
+}
+
+// Load bookings
+function loadBookings() {
+    fetch('/bookings')
+        .then(res => res.json())
+        .then(data => {
+            const list = document.getElementById('bookings-list');
+            if (data.length === 0) {
+                list.innerHTML = '<div class="empty-state" style="padding:20px;"><div>No bookings yet</div></div>';
+                document.getElementById('stat-bookings').textContent = '0';
+                return;
+            }
+            list.innerHTML = '';
+            data.forEach((b, i) => {
+                const li = document.createElement('li');
+                li.className = 'booking-item';
+                li.style.animationDelay = (i * 0.06) + 's';
+                li.innerHTML = `
+                    <div>
+                        <div class="b-user">👤 ${b.user}</div>
+                        <div class="b-resource">${b.resource}</div>
+                    </div>
+                    <div class="b-time">${b.timestamp || 'Just now'}</div>
+                `;
+                list.appendChild(li);
+            });
+            document.getElementById('stat-bookings').textContent = data.length;
+        });
+}
+
+// Predict usage
+function predict() {
+    const time = document.getElementById('time').value;
+    if (!time || time < 1 || time > 12) {
+        showToast('Please enter an hour between 1 and 12', 'error');
+        return;
+    }
+
+    fetch(`/predict?time=${time}`)
+        .then(res => res.json())
+        .then(data => {
+            const result = document.getElementById('prediction-result');
+            result.classList.add('show');
+
+            document.getElementById('prediction-value').textContent = data.predicted_usage + '%';
+            
+            const levelEl = document.getElementById('prediction-level');
+            levelEl.textContent = data.level;
+            levelEl.className = 'prediction-level ' + data.level;
+
+            document.getElementById('prediction-bar').style.width = data.predicted_usage + '%';
+            document.getElementById('prediction-suggestion').textContent = '💡 ' + data.suggestion;
+        })
+        .catch(() => showToast('Prediction failed', 'error'));
+}
+
+// Load analytics chart
+function loadAnalytics() {
+    fetch('/analytics')
+        .then(res => res.json())
+        .then(data => {
+            const container = document.getElementById('chart-container');
+            container.innerHTML = '';
+
+            const maxUsage = Math.max(...data.hourly_predictions.map(h => h.usage), 1);
+
+            data.hourly_predictions.forEach(h => {
+                const height = Math.max((h.usage / 100) * 220, 6);
+                let colorClass = 'low';
+                if (h.usage > 70) colorClass = 'high';
+                else if (h.usage > 40) colorClass = 'medium';
+
+                const ampm = h.hour >= 9 ? 'AM' : 'PM';
+                const label = h.hour > 12 ? (h.hour - 12) : h.hour;
+
+                const wrapper = document.createElement('div');
+                wrapper.className = 'chart-bar-wrapper';
+                wrapper.innerHTML = `
+                    <div class="chart-value">${h.usage}%</div>
+                    <div class="chart-bar ${colorClass}" style="height:${height}px;" title="${h.usage}% at ${label}${ampm}"></div>
+                    <div class="chart-label">${label}${ampm}</div>
+                `;
+                container.appendChild(wrapper);
+            });
+
+            if (data.total_bookings !== undefined) {
+                document.getElementById('stat-bookings').textContent = data.total_bookings;
+            }
+        });
+}
+
+// Add resource (Owner only)
+function addResource() {
+    const password = document.getElementById('owner-password').value;
+    const name = document.getElementById('resource-name').value.trim();
+    const type = document.getElementById('resource-type').value;
+    const capacity = document.getElementById('resource-capacity').value;
+    const status = document.getElementById('resource-status').value;
+
+    if (!password) {
+        showToast('Please enter the owner password', 'error');
+        return;
+    }
+    if (!name || !type || !capacity) {
+        showToast('Please fill in all fields', 'error');
+        return;
+    }
+
+    const btn = document.getElementById('add-resource-btn');
+    btn.innerHTML = '<div class="loading-spinner"></div> Adding...';
+    btn.disabled = true;
+
+    fetch('/add-resource', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `password=${encodeURIComponent(password)}&name=${encodeURIComponent(name)}&type=${encodeURIComponent(type)}&capacity=${encodeURIComponent(capacity)}&status=${encodeURIComponent(status)}`
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            showToast(data.message);
+            document.getElementById('owner-password').value = '';
+            document.getElementById('resource-name').value = '';
+            document.getElementById('resource-type').value = '';
+            document.getElementById('resource-capacity').value = '';
+            document.getElementById('resource-status').value = 'available';
+            loadResources();
+            loadAnalytics();
+        } else {
+            showToast(data.error || 'Failed to add resource', 'error');
+        }
+    })
+    .catch((err) => {
+        showToast('Error: ' + err.message, 'error');
+    })
+    .finally(() => {
+        btn.innerHTML = '➕ Add Resource';
+        btn.disabled = false;
+    });
+}
+
+// Initialize
+window.addEventListener('DOMContentLoaded', () => {
+    loadResources();
+    loadBookings();
+    loadAnalytics();
+});
+</script>
+
+</body>
+</html>
